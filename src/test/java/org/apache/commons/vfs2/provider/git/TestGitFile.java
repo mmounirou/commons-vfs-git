@@ -5,6 +5,8 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
@@ -31,6 +33,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
 public class TestGitFile
@@ -74,7 +78,7 @@ public class TestGitFile
 	{
 		rootFile = null;
 		git.getRepository().close();
-		FileUtils.deleteDirectory(workTree);
+		FileUtils.forceDelete(workTree);
 	}
 
 	@Test
@@ -191,18 +195,141 @@ public class TestGitFile
 		byte[] contents = new byte[contentSize];
 		new Random(System.currentTimeMillis()).nextBytes(contents);
 		createAndCommitFile(relativePath, contents);
-		
+
 		FileObject resolvedFile = rootFile.resolveFile(relativePath);
 		FileContent content = resolvedFile.getContent();
-		
+
 		assertThat(content.getSize()).isEqualTo(contentSize);
 		byte[] result = new byte[contentSize];
 		IOUtils.readFully(content.getInputStream(), result);
-		
+
 		assertThat(result).isEqualTo(contents);
 
 	}
 
+	@Test
+	public void testIsReadable() throws NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+	{
+		String relativePath = "folder/subfolder/filewithcontent.txt";
+		final int contentSize = 150;
+		byte[] contents = new byte[contentSize];
+		new Random(System.currentTimeMillis()).nextBytes(contents);
+		createAndCommitFile(relativePath, contents);
+
+		FileObject resolvedFile = rootFile.resolveFile(relativePath);
+
+		assertThat(resolvedFile.isReadable()).isTrue();
+	}
+
+	@Test
+	public void testIsWriteable()
+	{
+		fail("Not yet implemented"); // TODO
+	}
+
+	@Test
+	public void testIsContentOpen()
+	{
+		fail("Not yet implemented"); // TODO
+	}
+
+	@Test
+	public void testGetParentOfFile() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
+			WrongRepositoryStateException, IOException
+	{
+		String relativePath = "folder/subfolder/file.txt";
+		createAndCommitFile(relativePath);
+
+		FileObject resolvedFile = rootFile.resolveFile(relativePath);
+		FileObject parent = resolvedFile.getParent();
+
+		assertThat(parent.getName().getBaseName()).isEqualTo("subfolder");
+
+	}
+
+	@Test
+	public void testGetParentOfFolder() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
+			WrongRepositoryStateException, IOException
+	{
+		String relativePath = "folder/subfolder/file.txt";
+		createAndCommitFile(relativePath);
+
+		FileObject resolvedFile = rootFile.resolveFile("folder/subfolder");
+		FileObject parent = resolvedFile.getParent();
+
+		assertThat(parent.getName().getBaseName()).isEqualTo("subfolder");
+	}
+
+	@Test
+	public void testGetChildren() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
+			WrongRepositoryStateException, IOException
+	{
+		String relativePath = "folder/subfolder/";
+		createAndCommitFile(relativePath + "file1.txt");
+		createAndCommitFile(relativePath + "file2.txt");
+		createAndNotCommitFile(relativePath + "file3-not-committed.txt");
+		createAndCommitFile(relativePath + "folder1/file1.txt");
+		createAndNotCommitFile(relativePath + "folder2/file1-not-commited.txt");
+
+		FileObject resolvedFile = rootFile.resolveFile("folder/subfolder");
+		FileObject[] children = resolvedFile.getChildren();
+		List<String> strChildren = Lists.transform(Arrays.asList(children), new Function<FileObject, String>()
+		{
+
+			public String apply(FileObject input)
+			{
+				return input.getName().getBaseName();
+			}
+		});
+
+		assertThat(strChildren).containsExactly("file1.txt", "file2.txt", "folder1");
+	}
+
+	@Test
+	public void testGetExistantChild() throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+	{
+		String relativePath = "folder/subfolder/";
+		createAndCommitFile(relativePath + "file1.txt");
+		createAndCommitFile(relativePath + "file2.txt");
+		createAndNotCommitFile(relativePath + "file3-not-committed.txt");
+		createAndCommitFile(relativePath + "folder1/file1.txt");
+		createAndNotCommitFile(relativePath + "folder2/file1-not-commited.txt");
+
+		FileObject resolvedFile = rootFile.resolveFile("folder/subfolder");
+		FileObject child = resolvedFile.getChild("file1.txt");
+		assertThat(child.getName().getPath()).isEqualTo("/folder/subfolder/file1.txt");
+	}
+
+	@Test
+	public void testGetRootExistantChild() throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+	{
+		String relativePath = "folder/subfolder/";
+		createAndCommitFile(relativePath + "file1.txt");
+		createAndCommitFile(relativePath + "file2.txt");
+		createAndNotCommitFile(relativePath + "file3-not-committed.txt");
+		createAndCommitFile(relativePath + "folder1/file1.txt");
+		createAndNotCommitFile(relativePath + "folder2/file1-not-commited.txt");
+
+		FileObject child = rootFile.getChild("folder");
+		assertThat(child.getName().getPath()).isEqualTo("/folder");
+	}
+
+	
+	@Test
+	public void testGetInexistantChild() throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+	{
+		String relativePath = "folder/subfolder/";
+		createAndCommitFile(relativePath + "file1.txt");
+		createAndCommitFile(relativePath + "file2.txt");
+		createAndNotCommitFile(relativePath + "file3-not-committed.txt");
+		createAndCommitFile(relativePath + "folder1/file1.txt");
+		createAndNotCommitFile(relativePath + "folder2/file1-not-commited.txt");
+
+		FileObject resolvedFile = rootFile.resolveFile("folder/subfolder");
+		FileObject child = resolvedFile.getChild("file3-not-committed.txt");
+		assertThat(child).isNull();
+	}
+	
 	private void createAndCommitFile(String relativePath, byte[] contents) throws IOException, NoFilepatternException, NoHeadException, NoMessageException,
 			ConcurrentRefUpdateException, WrongRepositoryStateException
 	{
@@ -250,36 +377,6 @@ public class TestGitFile
 
 	@Test
 	public void testIsHidden()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testIsReadable()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testIsWriteable()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testGetParent()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testGetChildren()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testGetChild()
 	{
 		fail("Not yet implemented"); // TODO
 	}
@@ -357,18 +454,6 @@ public class TestGitFile
 	}
 
 	@Test
-	public void testGetInputStream()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testGetRandomAccessContent()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
 	public void testGetOutputStream()
 	{
 		fail("Not yet implemented"); // TODO
@@ -382,12 +467,6 @@ public class TestGitFile
 
 	@Test
 	public void testFindFilesFileSelectorBooleanListOfFileObject()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testIsContentOpen()
 	{
 		fail("Not yet implemented"); // TODO
 	}
