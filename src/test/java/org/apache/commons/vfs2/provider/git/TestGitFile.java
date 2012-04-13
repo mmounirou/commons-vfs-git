@@ -5,9 +5,12 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.CacheStrategy;
+import org.apache.commons.vfs2.FileContent;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.FileType;
@@ -135,11 +138,10 @@ public class TestGitFile
 	public void testGetTypeOfRootDirectory() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
 			WrongRepositoryStateException, IOException
 	{
-		
+
 		assertThat(rootFile.getType()).isEqualTo(FileType.FOLDER);
 	}
-	
-	
+
 	@Test
 	public void testGetTypeOnCommittedFile() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
 			WrongRepositoryStateException, IOException
@@ -149,7 +151,6 @@ public class TestGitFile
 		FileObject resolvedFile = rootFile.resolveFile("/file.txt");
 		assertThat(resolvedFile.getType()).isEqualTo(FileType.FILE);
 	}
-	
 
 	@Test
 	public void testGetTypeOnNotCommittedFile() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
@@ -181,12 +182,43 @@ public class TestGitFile
 		assertThat(resolvedFile.getType()).isEqualTo(FileType.IMAGINARY);
 	}
 
-	private void createAndNotCommitFile(String relativePath) throws IOException
+	@Test
+	public void testGetContent() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
+			WrongRepositoryStateException, IOException
+	{
+		String relativePath = "folder/subfolder/filewithcontent.txt";
+		final int contentSize = 150;
+		byte[] contents = new byte[contentSize];
+		new Random(System.currentTimeMillis()).nextBytes(contents);
+		createAndCommitFile(relativePath, contents);
+		
+		FileObject resolvedFile = rootFile.resolveFile(relativePath);
+		FileContent content = resolvedFile.getContent();
+		
+		assertThat(content.getSize()).isEqualTo(contentSize);
+		byte[] result = new byte[contentSize];
+		IOUtils.readFully(content.getInputStream(), result);
+		
+		assertThat(result).isEqualTo(contents);
+
+	}
+
+	private void createAndCommitFile(String relativePath, byte[] contents) throws IOException, NoFilepatternException, NoHeadException, NoMessageException,
+			ConcurrentRefUpdateException, WrongRepositoryStateException
+	{
+		File file = createAndNotCommitFile(relativePath);
+		Files.write(contents, file);
+		commitFile(relativePath);
+	}
+
+	private File createAndNotCommitFile(String relativePath) throws IOException
 	{
 		File absoluteFile = new File(workTree, relativePath);
 
 		absoluteFile.getParentFile().mkdirs();
 		Files.touch(absoluteFile);
+
+		return absoluteFile;
 	}
 
 	private void createAndCommitFile(String relativePath) throws IOException, NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException,
@@ -194,6 +226,12 @@ public class TestGitFile
 	{
 		createAndNotCommitFile(relativePath);
 
+		commitFile(relativePath);
+	}
+
+	private void commitFile(String relativePath) throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
+			WrongRepositoryStateException
+	{
 		git.add().addFilepattern(relativePath).call();
 		git.commit().setMessage("msg").call();
 	}
@@ -302,12 +340,6 @@ public class TestGitFile
 
 	@Test
 	public void testFindFilesFileSelector()
-	{
-		fail("Not yet implemented"); // TODO
-	}
-
-	@Test
-	public void testGetContent()
 	{
 		fail("Not yet implemented"); // TODO
 	}
