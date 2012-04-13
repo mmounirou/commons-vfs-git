@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.vfs2.Capability;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystem;
@@ -14,9 +15,9 @@ import org.apache.commons.vfs2.provider.local.LocalFileName;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.revwalk.DepthWalk;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 
 public class GitFileSystem extends AbstractFileSystem implements FileSystem
 {
@@ -61,14 +62,19 @@ public class GitFileSystem extends AbstractFileSystem implements FileSystem
 
 	private RevTree buildTree() throws IOException
 	{
-
 		Repository repo = getRepository();
-		ObjectId id = repo.resolve(repo.getFullBranch());
 
-		DepthWalk.RevWalk walk = new DepthWalk.RevWalk(repo, 1);
-		RevCommit revCommit = walk.parseCommit(id);
+		String strReference = GitFileSystemConfigBuilder.getInstance().getReference(getFileSystemOptions());
+		if (StringUtils.isBlank(strReference))
+		{
+			strReference = repo.getFullBranch();
+		}
 
+		ObjectId objectId = repo.resolve(strReference);
+		RevWalk walk = new RevWalk(repo);
+		RevCommit revCommit = walk.parseCommit(objectId);
 		return revCommit.getTree();
+
 	}
 
 	private Repository buildRepository() throws IOException

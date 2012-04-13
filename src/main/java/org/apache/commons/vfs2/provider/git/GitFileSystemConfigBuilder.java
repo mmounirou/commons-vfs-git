@@ -15,8 +15,6 @@ public class GitFileSystemConfigBuilder extends FileSystemConfigBuilder
 	private static final String GIT_DIR = GitFileSystemConfigBuilder.class.getName() + ".GIT_DIR";
 	private static final String TREE_DIR = GitFileSystemConfigBuilder.class.getName() + ".TREE_DIR";
 	private static final String COMMIT_DATE = GitFileSystemConfigBuilder.class.getName() + ".COMMIT_DATE";
-	private static final String COMMIT_REF = GitFileSystemConfigBuilder.class.getName() + ".COMMIT_REF";
-	private static final String COMMIT_REV = GitFileSystemConfigBuilder.class.getName() + ".COMMIT_REV";
 	private static final String REF = GitFileSystemConfigBuilder.class.getName() + ".REF";
 
 	private GitFileSystemConfigBuilder()
@@ -65,34 +63,51 @@ public class GitFileSystemConfigBuilder extends FileSystemConfigBuilder
 		setParam(opts, COMMIT_DATE, commitDate);
 	}
 
-	public String getCommitReference(FileSystemOptions opts)
-	{
-		return getString(opts, COMMIT_REF);
-	}
-
-	public void setCommitReference(FileSystemOptions opts, String commitReference)
-	{
-		setParam(opts, COMMIT_REF, commitReference);
-	}
-
 	public String getReference(FileSystemOptions opts)
 	{
 		return getString(opts, REF);
 	}
 
-	public void setReference(FileSystemOptions opts, String reference)
-	{
-		setParam(opts, REF, reference);
-	}
+	/**
+	 *  * Parse a git revision string and return an object id.
+	 *
+	 * Combinations of these operators are supported:
+	 * <ul>
+	 * <li><b>HEAD</b>, <b>MERGE_HEAD</b>, <b>FETCH_HEAD</b></li>
+	 * <li><b>SHA-1</b>: a complete or abbreviated SHA-1</li>
+	 * <li><b>refs/...</b>: a complete reference name</li>
+	 * <li><b>short-name</b>: a short reference name under {@code refs/heads},
+	 * {@code refs/tags}, or {@code refs/remotes} namespace</li>
+	 * <li><b>tag-NN-gABBREV</b>: output from describe, parsed by treating
+	 * {@code ABBREV} as an abbreviated SHA-1.</li>
+	 * <li><i>id</i><b>^</b>: first parent of commit <i>id</i>, this is the same
+	 * as {@code id^1}</li>
+	 * <li><i>id</i><b>^0</b>: ensure <i>id</i> is a commit</li>
+	 * <li><i>id</i><b>^n</b>: n-th parent of commit <i>id</i></li>
+	 * <li><i>id</i><b>~n</b>: n-th historical ancestor of <i>id</i>, by first
+	 * parent. {@code id~3} is equivalent to {@code id^1^1^1} or {@code id^^^}.</li>
+	 * <li><i>id</i><b>:path</b>: Lookup path under tree named by <i>id</i></li>
+	 * <li><i>id</i><b>^{commit}</b>: ensure <i>id</i> is a commit</li>
+	 * <li><i>id</i><b>^{tree}</b>: ensure <i>id</i> is a tree</li>
+	 * <li><i>id</i><b>^{tag}</b>: ensure <i>id</i> is a tag</li>
+	 * <li><i>id</i><b>^{blob}</b>: ensure <i>id</i> is a blob</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * The following operators are specified by Git conventions, but are not
+	 * supported by this method:
+	 * <ul>
+	 * <li><b>ref@{n}</b>: n-th version of ref as given by its reflog</li>
+	 * <li><b>ref@{time}</b>: value of ref at the designated time</li>
+	 * </ul>
+	 *
+	 * @param revstr
+	 *            A git object references expression
 
-	public int getCommitRevision(FileSystemOptions opts)
+	 */
+	public void setReference(FileSystemOptions opts, String revstr)
 	{
-		return getInteger(opts, COMMIT_REV);
-	}
-
-	public void setCommitRevision(FileSystemOptions opts, int commitRevision)
-	{
-		setParam(opts, COMMIT_REV, commitRevision);
+		setParam(opts, REF, revstr);
 	}
 
 }

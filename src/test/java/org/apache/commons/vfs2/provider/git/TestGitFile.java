@@ -14,6 +14,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.vfs2.CacheStrategy;
 import org.apache.commons.vfs2.FileContent;
 import org.apache.commons.vfs2.FileObject;
+import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileSystemOptions;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.cache.SoftRefFilesCache;
@@ -29,11 +30,13 @@ import org.eclipse.jgit.errors.UnmergedPathException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
@@ -47,6 +50,7 @@ public class TestGitFile
 	@Before
 	public void createGitRepository() throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
 	{
+		
 		File tmpFile = File.createTempFile("git", "test");
 		tmpFile.delete();
 		tmpFile.mkdirs();
@@ -61,6 +65,11 @@ public class TestGitFile
 		git = new Git(repo);
 		createAndCommitFile(".placeholder");
 
+		rootFile = resolveRootPath("");
+	}
+
+	private FileObject resolveRootPath(String strRef) throws FileSystemException
+	{
 		StandardFileSystemManager manager = new StandardFileSystemManager();
 		manager.addProvider("git", new GitProvider());
 		manager.setCacheStrategy(CacheStrategy.ON_CALL);
@@ -69,8 +78,9 @@ public class TestGitFile
 		FileSystemOptions options = new FileSystemOptions();
 		File gitDirectory = git.getRepository().getDirectory();
 		GitFileSystemConfigBuilder.getInstance().setGitDirectory(options, gitDirectory);
+		GitFileSystemConfigBuilder.getInstance().setReference(options, strRef);
 
-		rootFile = manager.resolveFile("git:/.", options);
+		return manager.resolveFile("git:/.", options);
 	}
 
 	@After
@@ -81,6 +91,22 @@ public class TestGitFile
 		FileUtils.forceDelete(workTree);
 	}
 
+	@Test
+	public void testLoadASpecificReference() throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException,
+			WrongRepositoryStateException, IOException
+	{
+				
+		createAndCommitFile("folder/file-in-master.txt");
+		Iterable<RevCommit> logs = git.log().all().call();
+		RevCommit revCommit = Iterables.get(logs, 0);
+		
+		FileObject file = resolveRootPath(revCommit.getName());
+		FileObject resolvedFile = file.resolveFile("/file.txt");
+		assertThat(resolvedFile.exists()).isFalse();
+		
+	}
+
+	
 	@Test
 	public void testRootGetName()
 	{
