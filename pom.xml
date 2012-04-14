@@ -60,4 +60,20 @@
 
 	</dependencies>
 
+	<name>commons-vfs-git</name>
+	<url>https://github.com/mmounirou/commons-vfs-git</url>
+	<description>a git provider for commons-vfs</description>
+	<scm>
+		<url>https://github.com/mmounirou/commons-vfs-git</url>
+		<connection>git://github.com/mmounirou/commons-vfs-git.git</connection>
+		<developerConnection>git@github.com:mmounirou/commons-vfs-git.git</developerConnection>
+	</scm>
+	<issueManagement>
+		<system>github</system>
+		<url>https://github.com/mmounirou/commons-vfs-git/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>jenkins</system>
+		<url>http://jenkins.mmounirou.com/job/commons-vfs-git/</url>
+	</ciManagement>
 </project>
