@@ -18,7 +18,6 @@ import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.provider.UriParser;
-import org.apache.commons.vfs2.provider.git.utils.GitFileOutputStream;
 import org.apache.commons.vfs2.provider.local.GitFileRandomAccessContent;
 import org.apache.commons.vfs2.util.RandomAccessMode;
 import org.eclipse.jgit.api.Git;
@@ -46,8 +45,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 		{
 			Repository repository = getGitFileSystem().getRepository(name);
 			return getRootName(name, repository);
-		}
-		catch ( IOException e )
+		} catch (IOException e)
 		{
 			// TODO throw new FileSystemException(e);
 			return null;
@@ -60,9 +58,9 @@ public class GitFile extends AbstractFileObject implements FileObject
 		FileName rootDirName = VFS.getManager().resolveFile(rootDirectory, "").getName();
 		FileName rootName = name;
 
-		while ( rootName.getParent() != name )
+		while (rootName.getParent() != name)
 		{
-			if ( rootName.getPath().endsWith(rootDirName.getPath()) )
+			if (rootName.getPath().endsWith(rootDirName.getPath()))
 			{
 				return rootName;
 			}
@@ -76,7 +74,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected FileType doGetType() throws Exception
 	{
-		if ( isRootDir() )
+		if (isRootDir())
 		{
 			return FileType.FOLDER;
 		}
@@ -85,23 +83,20 @@ public class GitFile extends AbstractFileObject implements FileObject
 		RevTree tree = getGitFileSystem().getTree(getName());
 
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
-		if ( treeWalk == null )
+		if (treeWalk == null)
 		{
 			// The file isn't in the local repository
 			return FileType.IMAGINARY;
-		}
-		else
+		} else
 		{
 			FileMode fileMode = treeWalk.getFileMode(0);
-			if ( fileMode == FileMode.TREE )
+			if (fileMode == FileMode.TREE)
 			{
 				return FileType.FOLDER;
-			}
-			else if ( fileMode == FileMode.EXECUTABLE_FILE || fileMode == FileMode.REGULAR_FILE )
+			} else if (fileMode == FileMode.EXECUTABLE_FILE || fileMode == FileMode.REGULAR_FILE)
 			{
 				return FileType.FILE;
-			}
-			else
+			} else
 			{
 				return FileType.IMAGINARY;
 			}
@@ -120,7 +115,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 		treeWalk.enterSubtree();
 		List<String> results = new ArrayList<String>();
 
-		while ( treeWalk.next() )
+		while (treeWalk.next())
 		{
 			String strName = treeWalk.getNameString();
 			results.add(strName);
@@ -193,8 +188,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 		try
 		{
 			IOUtils.copyLarge(inputStream, outPutStream);
-		}
-		finally
+		} finally
 		{
 			IOUtils.closeQuietly(outPutStream);
 			IOUtils.closeQuietly(inputStream);
@@ -206,7 +200,21 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected OutputStream doGetOutputStream(boolean bAppend) throws Exception
 	{
-		return new GitFileOutputStream(getName().getPathDecoded(), bAppend, this);
+		return new FileOutputStream(getName().getPathDecoded(), bAppend)
+		{
+			@Override
+			public void close() throws IOException
+			{
+				super.close();
+				try
+				{
+					commit();
+				} catch (GitAPIException e)
+				{
+					throw new IOException(e);
+				}
+			}
+		};
 	}
 
 	@Override
@@ -236,12 +244,11 @@ public class GitFile extends AbstractFileObject implements FileObject
 		// The treeWalker doesn't work with "." path so consider it as
 		// particular path
 		TreeWalk treeWalk = null;
-		if ( isRootDir() )
+		if (isRootDir())
 		{
 			treeWalk = new TreeWalk(repository);
 			treeWalk.addTree(tree);
-		}
-		else
+		} else
 		{
 			treeWalk = TreeWalk.forPath(repository, getRelativePath(), tree);
 		}
