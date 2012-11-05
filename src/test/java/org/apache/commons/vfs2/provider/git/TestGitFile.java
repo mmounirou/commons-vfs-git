@@ -21,6 +21,7 @@ import org.apache.commons.vfs2.cache.SoftRefFilesCache;
 import org.apache.commons.vfs2.impl.StandardFileSystemManager;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.ConcurrentRefUpdateException;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.api.errors.NoHeadException;
@@ -48,7 +49,7 @@ public class TestGitFile
 	private File workTree;
 
 	@Before
-	public void createGitRepository() throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+	public void createGitRepository() throws IOException, GitAPIException
 	{
 
 		File tmpFile = File.createTempFile("git", "test");
@@ -93,7 +94,7 @@ public class TestGitFile
 
 	@Test
 	public void testLoadASpecificReference()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 
 		createAndCommitFile("folder/file-in-master.txt");
@@ -114,7 +115,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetName()
-			throws NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, JGitInternalException, WrongRepositoryStateException, IOException
+			throws JGitInternalException, IOException, GitAPIException
 	{
 		createAndCommitFile("file.txt");
 
@@ -125,7 +126,7 @@ public class TestGitFile
 
 	@Test
 	public void testExistsOnCommittedFile()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		createAndCommitFile("file.txt");
 
@@ -145,7 +146,7 @@ public class TestGitFile
 
 	@Test
 	public void testExistsOnCommittedFolder()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		createAndCommitFile("folder/file.txt");
 
@@ -173,7 +174,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetTypeOnCommittedFile()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		createAndCommitFile("file.txt");
 
@@ -193,7 +194,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetTypeOnCommittedFolder()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		createAndCommitFile("folder/file.txt");
 
@@ -213,7 +214,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetContent()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/filewithcontent.txt";
 		final int contentSize = 150;
@@ -233,7 +234,7 @@ public class TestGitFile
 	}
 
 	@Test
-	public void testIsReadable() throws NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+	public void testIsReadable() throws GitAPIException, IOException
 	{
 		String relativePath = "folder/subfolder/filewithcontent.txt";
 		final int contentSize = 150;
@@ -260,7 +261,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetParentOfFile()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/file.txt";
 		createAndCommitFile(relativePath);
@@ -274,7 +275,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetParentOfFolder()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/file.txt";
 		createAndCommitFile(relativePath);
@@ -287,7 +288,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetChildren()
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException, IOException
+			throws UnmergedPathException, IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/";
 		createAndCommitFile(relativePath + "file1.txt");
@@ -311,7 +312,7 @@ public class TestGitFile
 	}
 
 	@Test
-	public void testGetExistantChild() throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+	public void testGetExistantChild() throws IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/";
 		createAndCommitFile(relativePath + "file1.txt");
@@ -327,7 +328,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetRootExistantChild()
-			throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+			throws IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/";
 		createAndCommitFile(relativePath + "file1.txt");
@@ -342,7 +343,7 @@ public class TestGitFile
 
 	@Test
 	public void testGetInexistantChild()
-			throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+			throws IOException, GitAPIException
 	{
 		String relativePath = "folder/subfolder/";
 		createAndCommitFile(relativePath + "file1.txt");
@@ -357,7 +358,7 @@ public class TestGitFile
 	}
 
 	private void createAndCommitFile(String relativePath, byte[] contents)
-			throws IOException, NoFilepatternException, NoHeadException, NoMessageException, ConcurrentRefUpdateException, WrongRepositoryStateException
+			throws IOException, GitAPIException
 	{
 		File file = createAndNotCommitFile(relativePath);
 		Files.write(contents, file);
@@ -375,7 +376,7 @@ public class TestGitFile
 	}
 
 	private void createAndCommitFile(String relativePath)
-			throws IOException, NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException
+			throws IOException, UnmergedPathException, GitAPIException
 	{
 		createAndNotCommitFile(relativePath);
 
@@ -383,7 +384,7 @@ public class TestGitFile
 	}
 
 	private void commitFile(String relativePath)
-			throws NoFilepatternException, NoHeadException, NoMessageException, UnmergedPathException, ConcurrentRefUpdateException, WrongRepositoryStateException
+			throws UnmergedPathException, GitAPIException
 	{
 		git.add().addFilepattern(relativePath).call();
 		git.commit().setMessage("msg").call();
