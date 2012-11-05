@@ -1,0 +1,6 @@
+<providers>
+	<provider class-name="org.apache.commons.vfs2.provider.git.GitProvider">
+		<scheme name="git"/>
+	</provider>
+	<extension-map extension="git" scheme="git"/>
+</providers>
