@@ -18,9 +18,11 @@ import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.provider.UriParser;
+import org.apache.commons.vfs2.provider.git.utils.GitFileOutputStream;
 import org.apache.commons.vfs2.provider.local.GitFileRandomAccessContent;
 import org.apache.commons.vfs2.util.RandomAccessMode;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.Repository;
@@ -204,10 +206,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected OutputStream doGetOutputStream(boolean bAppend) throws Exception
 	{
-		// TODO update to be able to auto commit the file after the stream
-		// close.
-
-		return new FileOutputStream(getName().getPathDecoded(), bAppend);
+		return new GitFileOutputStream(getName().getPathDecoded(), bAppend, this);
 	}
 
 	@Override
@@ -262,5 +261,14 @@ public class GitFile extends AbstractFileObject implements FileObject
 	public GitFileSystem getGitFileSystem()
 	{
 		return (GitFileSystem) getFileSystem();
+	}
+
+	public void commit() throws IOException, GitAPIException
+	{
+		Repository repository = getGitFileSystem().getRepository(getName());
+		Git git = new Git(repository);
+		git.add().addFilepattern(getRelativePath()).call();
+		git.commit().setMessage(String.format("Modify  %s", getRelativePath()));
+
 	}
 }
