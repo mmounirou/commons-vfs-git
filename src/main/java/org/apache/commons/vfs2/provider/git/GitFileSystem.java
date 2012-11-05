@@ -44,7 +44,7 @@ public class GitFileSystem extends AbstractFileSystem implements FileSystem
 
 	Repository getRepository() throws IOException
 	{
-		if (repository == null)
+		if ( repository == null )
 		{
 			repository = buildRepository();
 		}
@@ -53,7 +53,7 @@ public class GitFileSystem extends AbstractFileSystem implements FileSystem
 
 	RevTree getTree() throws IOException
 	{
-		if (tree == null)
+		if ( tree == null )
 		{
 			tree = buildTree();
 		}
@@ -65,7 +65,7 @@ public class GitFileSystem extends AbstractFileSystem implements FileSystem
 		Repository repo = getRepository();
 
 		String strReference = GitFileSystemConfigBuilder.getInstance().getReference(getFileSystemOptions());
-		if (StringUtils.isBlank(strReference))
+		if ( StringUtils.isBlank(strReference) )
 		{
 			strReference = repo.getFullBranch();
 		}

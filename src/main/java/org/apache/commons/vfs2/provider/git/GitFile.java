@@ -26,13 +26,14 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevTree;
 import org.eclipse.jgit.treewalk.TreeWalk;
 
-public class GitFile extends AbstractFileObject implements FileObject {
+public class GitFile extends AbstractFileObject implements FileObject
+{
 
 	private final FileName rootName;
 	private final GitFileSystem gitFileSystem;
 
-	public GitFile(GitFileSystem gitFileSystem, FileName rootName,
-			AbstractFileName name) {
+	public GitFile(GitFileSystem gitFileSystem, FileName rootName, AbstractFileName name)
+	{
 		super(name, gitFileSystem);
 		this.rootName = rootName;
 		this.gitFileSystem = gitFileSystem;
@@ -40,8 +41,10 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected FileType doGetType() throws Exception {
-		if (isRootDir()) {
+	protected FileType doGetType() throws Exception
+	{
+		if ( isRootDir() )
+		{
 			return FileType.FOLDER;
 		}
 
@@ -49,17 +52,24 @@ public class GitFile extends AbstractFileObject implements FileObject {
 		RevTree tree = gitFileSystem.getTree();
 
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
-		if (treeWalk == null) {
+		if ( treeWalk == null )
+		{
 			// The file isn't in the local repository
 			return FileType.IMAGINARY;
-		} else {
+		}
+		else
+		{
 			FileMode fileMode = treeWalk.getFileMode(0);
-			if (fileMode == FileMode.TREE) {
+			if ( fileMode == FileMode.TREE )
+			{
 				return FileType.FOLDER;
-			} else if (fileMode == FileMode.EXECUTABLE_FILE
-					|| fileMode == FileMode.REGULAR_FILE) {
+			}
+			else if ( fileMode == FileMode.EXECUTABLE_FILE || fileMode == FileMode.REGULAR_FILE )
+			{
 				return FileType.FILE;
-			} else {
+			}
+			else
+			{
 				return FileType.IMAGINARY;
 			}
 
@@ -68,7 +78,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected String[] doListChildren() throws Exception {
+	protected String[] doListChildren() throws Exception
+	{
 		Repository repository = gitFileSystem.getRepository();
 		RevTree tree = gitFileSystem.getTree();
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
@@ -76,7 +87,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 		treeWalk.enterSubtree();
 		List<String> results = new ArrayList<String>();
 
-		while (treeWalk.next()) {
+		while ( treeWalk.next() )
+		{
 			String strName = treeWalk.getNameString();
 			results.add(strName);
 		}
@@ -85,7 +97,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected void doDelete() throws Exception {
+	protected void doDelete() throws Exception
+	{
 		Repository repository = gitFileSystem.getRepository();
 		Git git = new Git(repository);
 		git.rm().addFilepattern(getRelativePath()).call();
@@ -93,7 +106,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected void doRename(FileObject newfile) throws Exception {
+	protected void doRename(FileObject newfile) throws Exception
+	{
 		Repository repository = gitFileSystem.getRepository();
 		Git git = new Git(repository);
 
@@ -101,39 +115,39 @@ public class GitFile extends AbstractFileObject implements FileObject {
 		git.rm().addFilepattern(getRelativePath()).call();
 
 		// rename on file system
-		new File(getName().getPathDecoded()).renameTo(new File(newfile
-				.getName().getPathDecoded()));
+		new File(getName().getPathDecoded()).renameTo(new File(newfile.getName().getPathDecoded()));
 
 		// add new file
 		git.add().addFilepattern(rootName.getRelativeName(newfile.getName()));
 
-		git.commit().setMessage(
-				String.format("Rename %s to %s", getRelativePath(),
-						rootName.getRelativeName(newfile.getName())));
+		git.commit().setMessage(String.format("Rename %s to %s", getRelativePath(), rootName.getRelativeName(newfile.getName())));
 
 	}
 
 	@Override
-	protected void doCreateFolder() throws Exception {
+	protected void doCreateFolder() throws Exception
+	{
 		new File(getName().getPathDecoded()).mkdir();
 	}
 
 	@Override
-	protected long doGetLastModifiedTime() throws Exception {
+	protected long doGetLastModifiedTime() throws Exception
+	{
 		// TODO modified to return the date of last commit which contains this
 		// file
 		return new File(getName().getPathDecoded()).lastModified();
 	}
 
 	@Override
-	protected boolean doSetLastModifiedTime(long modtime) throws Exception {
+	protected boolean doSetLastModifiedTime(long modtime) throws Exception
+	{
 		// TODO modified to support only if the modtime is now.
 		return new File(getName().getPathDecoded()).setLastModified(modtime);
 	}
 
 	@Override
-	protected RandomAccessContent doGetRandomAccessContent(RandomAccessMode mode)
-			throws Exception {
+	protected RandomAccessContent doGetRandomAccessContent(RandomAccessMode mode) throws Exception
+	{
 
 		// TODO find a way to not copy the content fully for random access
 
@@ -143,9 +157,12 @@ public class GitFile extends AbstractFileObject implements FileObject {
 		InputStream inputStream = doGetInputStream();
 		OutputStream outPutStream = new FileOutputStream(tempFile);
 
-		try {
+		try
+		{
 			IOUtils.copyLarge(inputStream, outPutStream);
-		} finally {
+		}
+		finally
+		{
 			IOUtils.closeQuietly(outPutStream);
 			IOUtils.closeQuietly(inputStream);
 		}
@@ -154,7 +171,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected OutputStream doGetOutputStream(boolean bAppend) throws Exception {
+	protected OutputStream doGetOutputStream(boolean bAppend) throws Exception
+	{
 		// TODO update to be able to auto commit the file after the stream
 		// close.
 
@@ -162,7 +180,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected long doGetContentSize() throws Exception {
+	protected long doGetContentSize() throws Exception
+	{
 		Repository repository = gitFileSystem.getRepository();
 		RevTree tree = gitFileSystem.getTree();
 
@@ -172,7 +191,8 @@ public class GitFile extends AbstractFileObject implements FileObject {
 	}
 
 	@Override
-	protected InputStream doGetInputStream() throws Exception {
+	protected InputStream doGetInputStream() throws Exception
+	{
 		Repository repository = gitFileSystem.getRepository();
 		RevTree tree = gitFileSystem.getTree();
 
@@ -181,25 +201,30 @@ public class GitFile extends AbstractFileObject implements FileObject {
 		return objectLoader.openStream();
 	}
 
-	private TreeWalk buildTreeWalk(Repository repository, RevTree tree)
-			throws IOException {
+	private TreeWalk buildTreeWalk(Repository repository, RevTree tree) throws IOException
+	{
 		// The treeWalker doesn't work with "." path so consider it as
 		// particular path
 		TreeWalk treeWalk = null;
-		if (isRootDir()) {
+		if ( isRootDir() )
+		{
 			treeWalk = new TreeWalk(repository);
 			treeWalk.addTree(tree);
-		} else {
+		}
+		else
+		{
 			treeWalk = TreeWalk.forPath(repository, getRelativePath(), tree);
 		}
 		return treeWalk;
 	}
 
-	private String getRelativePath() throws FileSystemException {
+	private String getRelativePath() throws FileSystemException
+	{
 		return rootName.getRelativeName(getName());
 	}
 
-	private boolean isRootDir() {
+	private boolean isRootDir()
+	{
 		return getName().compareTo(rootName) == 0;
 	}
 }
