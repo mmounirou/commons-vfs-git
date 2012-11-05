@@ -6,6 +6,7 @@ import java.util.Collection;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.vfs2.Capability;
+import org.apache.commons.vfs2.FileName;
 import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystem;
 import org.apache.commons.vfs2.FileSystemOptions;
@@ -42,27 +43,27 @@ public class GitFileSystem extends AbstractFileSystem implements FileSystem
 		caps.addAll(GitProvider.capabilities);
 	}
 
-	Repository getRepository() throws IOException
+	Repository getRepository(FileName name) throws IOException
 	{
 		if ( repository == null )
 		{
-			repository = buildRepository();
+			repository = buildRepository(name);
 		}
 		return repository;
 	}
 
-	RevTree getTree() throws IOException
+	RevTree getTree(FileName name) throws IOException
 	{
 		if ( tree == null )
 		{
-			tree = buildTree();
+			tree = buildTree(name);
 		}
 		return tree;
 	}
 
-	private RevTree buildTree() throws IOException
+	private RevTree buildTree(FileName name) throws IOException
 	{
-		Repository repo = getRepository();
+		Repository repo = getRepository(name);
 
 		String strReference = GitFileSystemConfigBuilder.getInstance().getReference(getFileSystemOptions());
 		if ( StringUtils.isBlank(strReference) )
@@ -77,11 +78,10 @@ public class GitFileSystem extends AbstractFileSystem implements FileSystem
 
 	}
 
-	private Repository buildRepository() throws IOException
+	private Repository buildRepository(FileName name) throws IOException
 	{
-		File gitDirectory = GitFileSystemConfigBuilder.getInstance().getGitDirectory(getFileSystemOptions());
-
-		RepositoryBuilder builder = new RepositoryBuilder();
-		return builder.setGitDir(gitDirectory).findGitDir().readEnvironment().build();
+		File gitDir = new File(name.getPathDecoded());
+		Repository build = new RepositoryBuilder().setWorkTree(gitDir).findGitDir().readEnvironment().build();
+		return new RepositoryBuilder().setWorkTree(build.getDirectory().getParentFile()).findGitDir().readEnvironment().build();
 	}
 }

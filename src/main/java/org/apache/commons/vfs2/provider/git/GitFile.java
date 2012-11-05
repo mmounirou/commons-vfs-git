@@ -14,6 +14,7 @@ import org.apache.commons.vfs2.FileObject;
 import org.apache.commons.vfs2.FileSystemException;
 import org.apache.commons.vfs2.FileType;
 import org.apache.commons.vfs2.RandomAccessContent;
+import org.apache.commons.vfs2.VFS;
 import org.apache.commons.vfs2.provider.AbstractFileName;
 import org.apache.commons.vfs2.provider.AbstractFileObject;
 import org.apache.commons.vfs2.provider.UriParser;
@@ -30,14 +31,44 @@ public class GitFile extends AbstractFileObject implements FileObject
 {
 
 	private final FileName rootName;
-	private final GitFileSystem gitFileSystem;
 
 	public GitFile(GitFileSystem gitFileSystem, FileName rootName, AbstractFileName name)
 	{
 		super(name, gitFileSystem);
-		this.rootName = rootName;
-		this.gitFileSystem = gitFileSystem;
+		this.rootName = getGitRootDir(name);
+	}
 
+	private FileName getGitRootDir(AbstractFileName name)
+	{
+		try
+		{
+			Repository repository = getGitFileSystem().getRepository(name);
+			return getRootName(name, repository);
+		}
+		catch ( IOException e )
+		{
+			// TODO throw new FileSystemException(e);
+			return null;
+		}
+	}
+
+	private FileName getRootName(AbstractFileName name, Repository repository) throws FileSystemException
+	{
+		File rootDirectory = repository.getDirectory().getParentFile();
+		FileName rootDirName = VFS.getManager().resolveFile(rootDirectory, "").getName();
+		FileName rootName = name;
+
+		while ( rootName.getParent() != name )
+		{
+			if ( rootName.getPath().endsWith(rootDirName.getPath()) )
+			{
+				return rootName;
+			}
+			rootName = rootName.getParent();
+		}
+
+		// TODO throw an assertion
+		return null;
 	}
 
 	@Override
@@ -48,8 +79,8 @@ public class GitFile extends AbstractFileObject implements FileObject
 			return FileType.FOLDER;
 		}
 
-		Repository repository = gitFileSystem.getRepository();
-		RevTree tree = gitFileSystem.getTree();
+		Repository repository = getGitFileSystem().getRepository(getName());
+		RevTree tree = getGitFileSystem().getTree(getName());
 
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
 		if ( treeWalk == null )
@@ -80,8 +111,8 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected String[] doListChildren() throws Exception
 	{
-		Repository repository = gitFileSystem.getRepository();
-		RevTree tree = gitFileSystem.getTree();
+		Repository repository = getGitFileSystem().getRepository(getName());
+		RevTree tree = getGitFileSystem().getTree(getName());
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
 
 		treeWalk.enterSubtree();
@@ -99,7 +130,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected void doDelete() throws Exception
 	{
-		Repository repository = gitFileSystem.getRepository();
+		Repository repository = getGitFileSystem().getRepository(getName());
 		Git git = new Git(repository);
 		git.rm().addFilepattern(getRelativePath()).call();
 		git.commit().setMessage(String.format("Delete %s", getRelativePath()));
@@ -108,7 +139,7 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected void doRename(FileObject newfile) throws Exception
 	{
-		Repository repository = gitFileSystem.getRepository();
+		Repository repository = getGitFileSystem().getRepository(getName());
 		Git git = new Git(repository);
 
 		// remove old file
@@ -182,8 +213,8 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected long doGetContentSize() throws Exception
 	{
-		Repository repository = gitFileSystem.getRepository();
-		RevTree tree = gitFileSystem.getTree();
+		Repository repository = getGitFileSystem().getRepository(getName());
+		RevTree tree = getGitFileSystem().getTree(getName());
 
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
 		ObjectLoader objectLoader = repository.open(treeWalk.getObjectId(0));
@@ -193,8 +224,8 @@ public class GitFile extends AbstractFileObject implements FileObject
 	@Override
 	protected InputStream doGetInputStream() throws Exception
 	{
-		Repository repository = gitFileSystem.getRepository();
-		RevTree tree = gitFileSystem.getTree();
+		Repository repository = getGitFileSystem().getRepository(getName());
+		RevTree tree = getGitFileSystem().getTree(getName());
 
 		TreeWalk treeWalk = buildTreeWalk(repository, tree);
 		ObjectLoader objectLoader = repository.open(treeWalk.getObjectId(0));
@@ -226,5 +257,10 @@ public class GitFile extends AbstractFileObject implements FileObject
 	private boolean isRootDir()
 	{
 		return getName().compareTo(rootName) == 0;
+	}
+
+	public GitFileSystem getGitFileSystem()
+	{
+		return (GitFileSystem) getFileSystem();
 	}
 }
